@@ -72,9 +72,12 @@ function doPost(e) {
     // 4. Registro en Google Sheets con appendRow()
     let sheetsOk = false;
     try {
+      // Usamos la fecha y hora exacta del servidor en el momento de la subida
+      const fechaSubida = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
+
       sheet.appendRow([
         datosSanitizados.solicitudId,
-        datosSanitizados.fecha,
+        fechaSubida,
         datosSanitizados.estudiante.nombre,
         datosSanitizados.estudiante.grado,
         datosSanitizados.representante.nombre,
