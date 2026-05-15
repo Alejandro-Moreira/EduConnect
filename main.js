@@ -84,8 +84,7 @@ function doPost(e) {
         datosSanitizados.representante.email,
         datosSanitizados.colegio,
         datosSanitizados.canalOrigen,
-        datosSanitizados.estado,
-        new Date().toISOString(),
+        datosSanitizados.estado
       ]);
       sheetsOk = true;
     } catch (err) {
