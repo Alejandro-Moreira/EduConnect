@@ -1,390 +1,273 @@
-# 📋 EduConnect - Sistema de Notificaciones Integrado
+# EduConnect - Sistema de Notificaciones Integrado
 
-## Descripción Rápida
+## Descripcion Rapida
 
-**EduConnect API** integra solicitudes de admisión estudiantil con:
-- ✅ **Google Sheets**: Registro persistente de solicitudes
-- ✅ **Discord Webhook**: Notificaciones automáticas en tiempo real
+EduConnect API integra solicitudes de admision estudiantil con:
+- Google Sheets: Registro persistente de solicitudes
+- Discord Webhook: Notificaciones automaticas en tiempo real
 
-Recibe solicitudes JSON, valida datos, registra en Sheets y notifica a Discord automáticamente.
+Recibe solicitudes JSON, valida datos, registra en Sheets y notifica a Discord automaticamente.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Configuración Inicial
+### 1. Configuracion Inicial
 
-Actualiza estas constantes en `main.js`:
+Nuestra integracion utiliza PropertiesService para no quemar credenciales en el codigo.
+Debes configurar las siguientes Propiedades de secuencia de comandos desde la configuracion de Google Apps Script:
 
-```javascript
-const SHEET_ID = 'tu-id-aqui';  // ID de tu Google Sheet
-const WEBHOOK_URL = 'tu-webhook-aqui';  // URL del Webhook de Discord
-```
+- SHEET_ID: ID de tu Google Sheet
+- WEBHOOK_URL: URL del Webhook de Discord
 
 ### 2. Desplegar en Google Apps Script
 
-```bash
-clasp create --type sheets
-clasp push
-clasp deploy
-```
+Despliega el script configurandolo como Aplicacion Web. 
+Asegurate de que en "Quien tiene acceso" este seleccionado "Cualquier persona" (Anyone).
+Acepta los permisos de Google.
 
 ### 3. Probar con Postman
 
-1. Importa `POSTMAN_TEST_CASES.json` en Postman
-2. Reemplaza `{{DEPLOYMENT_URL}}` con tu URL de despliegue
-3. Ejecuta los casos de prueba
+1. Configura una peticion POST en Postman con la URL obtenida.
+2. Agrega el Header "Content-Type: application/json" (opcional pero recomendado).
+3. Pega el Payload en la pestana Body -> raw -> JSON.
+4. Ejecuta los casos de prueba.
 
 ---
 
-## 📊 Flujo de Proceso
+## Flujo de Proceso
 
 ```
 Solicitud JSON
-      ↓
+      |
   Validaciones
   (campos, email, fecha)
-      ↓
- ¿Válida? → ❌ HTTP 400
-      ↓ ✅
-¿Duplicada? → ❌ HTTP 409
-      ↓ ✅
+      |
+  Valida? -> HTTP 400
+      | Si
+Duplicada? -> HTTP 409
+      | No
 Registrar en Sheets
 Notificar a Discord
-      ↓
+      |
 Respuesta al cliente
 (200, 207 o 500)
 ```
 
 ---
 
-## ✅ Campos Obligatorios
+## Campos Obligatorios
 
-| Campo | Tipo | Validación |
+| Campo | Tipo | Validacion |
 |-------|------|-----------|
-| `solicitudId` | string | No vacío, único en Sheet |
-| `fecha` | string | ISO 8601: `YYYY-MM-DDTHH:MM:SS` |
-| `estudiante.nombre` | string | No vacío |
-| `estudiante.grado` | string | No vacío (ej: "10°") |
-| `representante.nombre` | string | No vacío |
-| `representante.email` | string | Formato válido `xxx@yyy.zzz` |
-| `colegio` | string | No vacío |
-| `canalOrigen` | string | No vacío (ej: "Postman", "Form") |
-| `estado` | string | No vacío (ej: "Pendiente", "Aceptado") |
+| solicitudId | string | No vacio, unico en Sheet |
+| fecha | string | ISO 8601: YYYY-MM-DDTHH:MM:SS |
+| estudiante.nombre | string | No vacio |
+| estudiante.grado | string | No vacio (ej: "10 EGB") |
+| representante.nombre | string | No vacio |
+| representante.email | string | Formato valido xxx@yyy.zzz |
+| colegio | string | No vacio |
+| canalOrigen | string | No vacio (ej: "formulario_web") |
+| estado | string | No vacio (ej: "pendiente") |
 
 ---
 
-## 📝 Ejemplo de Solicitud Válida
+## Ejemplo de Solicitud Valida
 
 ```json
 {
-  "solicitudId": "SOL-2026-001",
-  "fecha": "2026-05-14T14:30:00",
+  "solicitudId": "SOL-2026-0042",
+  "fecha": "2026-05-14T21:00:00",
   "estudiante": {
-    "nombre": "Juan Pérez",
-    "grado": "10°"
+    "nombre": "Maria Lopez Torres",
+    "grado": "Decimo EGB"
   },
   "representante": {
-    "nombre": "Carlos Pérez",
-    "email": "carlos@example.com"
+    "nombre": "Ana Torres Mendoza",
+    "email": "ana.torres@email.com"
   },
-  "colegio": "Colegio Central",
-  "canalOrigen": "Postman",
-  "estado": "Pendiente"
+  "colegio": "Unidad Educativa EduConnect",
+  "canalOrigen": "formulario_web",
+  "estado": "pendiente"
 }
 ```
 
 ---
 
-## 📬 Respuestas del Sistema
+## Respuestas del Sistema
 
-### ✅ Éxito Total (HTTP 200)
+### Exito Total (HTTP 200)
 
 ```json
 {
-  "status": "Éxito",
-  "message": "Solicitud registrada y notificada",
+  "status": "Exito",
+  "message": "Solicitud registrada y notificada correctamente",
   "code": 200,
-  "timestamp": "2026-05-14T14:30:45.123Z"
+  "timestamp": "2026-05-14T14:30:45.123Z",
+  "procesado": true
 }
 ```
-- ✅ Datos en Google Sheets
-- ✅ Notificación en Discord
+- Datos guardados en Google Sheets
+- Notificacion enviada en Discord
 
 ---
 
-### ⚠️ Éxito Parcial (HTTP 207)
+### Exito Parcial (HTTP 200)
 
 ```json
 {
-  "status": "Parcial",
-  "message": "Datos guardados en Sheets, pero la notificación falló: Discord respondió con código 429",
-  "code": 207,
-  "timestamp": "2026-05-14T14:30:45.123Z"
+  "status": "Exito Parcial",
+  "message": "Guardado en Sheets, pero fallo la notificacion a Discord",
+  "code": 200,
+  "timestamp": "2026-05-14T14:30:45.123Z",
+  "procesado": true,
+  "warning": "Webhook fallido"
 }
 ```
-- ✅ Datos registrados en Sheets
-- ❌ Notificación a Discord falló (ej: Error 429 Rate Limit)
+- Datos registrados en Sheets
+- Notificacion a Discord fallo (ej: Error 429 Rate Limit)
 
 ---
 
-### ❌ Error de Validación (HTTP 400)
+### Error de Validacion (HTTP 400)
 
 ```json
 {
   "status": "Error",
-  "message": "Faltan campos obligatorios: estudiante.nombre",
+  "message": "Faltan campos obligatorios: estado",
   "code": 400,
-  "timestamp": "2026-05-14T14:30:45.123Z"
+  "timestamp": "2026-05-14T14:30:45.123Z",
+  "procesado": false
 }
 ```
-- ❌ Solicitud no procesada
-- ❌ No se registra en Sheets
-- ❌ No se envía a Discord
+- Solicitud no procesada
+- No se registra en Sheets
+- No se envia a Discord
 
 ---
 
-### ❌ Solicitud Duplicada (HTTP 409)
+### Solicitud Duplicada (HTTP 409)
 
 ```json
 {
   "status": "Error",
-  "message": "Solicitud duplicada (ID: SOL-2026-001)",
+  "message": "Solicitud duplicada (ID: SOL-2026-0042)",
   "code": 409,
-  "timestamp": "2026-05-14T14:30:45.123Z"
+  "timestamp": "2026-05-14T14:30:45.123Z",
+  "procesado": false
 }
 ```
-- ❌ El `solicitudId` ya existe en la Sheet
-- ✅ Protección contra duplicados (Idempotencia)
+- El solicitudId ya existe en la Sheet
+- Proteccion contra duplicados (Idempotencia)
 
 ---
 
-### ❌ Error Total (HTTP 500)
+### Error Total (HTTP 500)
 
 ```json
 {
   "status": "Error",
-  "message": "Falló el registro en Sheets y la notificación a Discord",
+  "message": "Fallo el registro en Google Sheets",
   "code": 500,
-  "timestamp": "2026-05-14T14:30:45.123Z"
+  "timestamp": "2026-05-14T14:30:45.123Z",
+  "procesado": false
 }
 ```
-- ❌ Ambos servicios fallaron
-- ❌ Solicitud rechazada completamente
+- Ambos servicios fallaron
+- Solicitud rechazada completamente
 
 ---
 
-## 🔍 Escenarios de Error Demostrados
+## Escenarios de Error Demostrados
 
-### 1️⃣ Falta campo obligatorio
+### 1. Falta campo obligatorio
 
-**Entrada sin `solicitudId`:**
-```bash
-curl -X POST https://tu-url \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fecha": "2026-05-14T14:30:00",
-    "estudiante": {"nombre": "Juan", "grado": "10°"},
-    "representante": {"nombre": "Carlos", "email": "c@ex.com"},
-    "colegio": "Colegio A",
-    "canalOrigen": "Postman",
-    "estado": "Pendiente"
-  }'
-```
-
-**Respuesta:** HTTP 400 - "Faltan campos obligatorios: solicitudId"
+Respuesta: HTTP 400 - "Faltan campos obligatorios: solicitudId"
 
 ---
 
-### 2️⃣ Email inválido
+### 2. Email invalido
 
-**Entrada con email sin dominio:**
-```json
-{
-  "representante": {
-    "email": "correo-sin-dominio"
-  }
-}
-```
-
-**Respuesta:** HTTP 400 - "Formato de email inválido"
+Respuesta: HTTP 400 - "Formato de email invalido"
 
 ---
 
-### 3️⃣ Fecha incorrecta
+### 3. Fecha incorrecta
 
-**Entrada con fecha no ISO:**
-```json
-{
-  "fecha": "14-05-2026 14:30"
-}
-```
-
-**Respuesta:** HTTP 400 - "Formato de fecha debe ser ISO (YYYY-MM-DDTHH:MM:SS)"
+Respuesta: HTTP 400 - "Formato de fecha debe ser ISO (YYYY-MM-DDTHH:MM:SS)"
 
 ---
 
-### 4️⃣ Solicitud duplicada
+### 4. Solicitud duplicada
 
-**Primer POST con SOL-2026-500:** HTTP 200 ✅
-**Segundo POST idéntico:** HTTP 409 ❌
-
-```json
-{
-  "status": "Error",
-  "message": "Solicitud duplicada (ID: SOL-2026-500)",
-  "code": 409,
-  "timestamp": "..."
-}
-```
+Respuesta: HTTP 409 - "Solicitud duplicada (ID: SOL-2026-0042)"
 
 ---
 
-## ❓ Casos Especiales
+## Casos Especiales
 
-### 📊 ¿Qué pasa si Google Sheets no responde?
+### Que pasa si Google Sheets no responde?
 
-**Escenario:**
-- Red caída, timeout en Sheets
-- Permisos insuficientes en la hoja
+Escenario:
+- Timeout en Sheets o permisos insuficientes en la hoja
 
-**Resultado:**
-- ✅ Si Discord funciona → HTTP 207 (Parcial)
-  - Mensaje: "Notificación enviada, pero no se registró en Sheets"
-  - Equipo notificado pero datos NO persistidos
-- ❌ Si Discord también falla → HTTP 500 (Error total)
+Resultado:
+- Si falla, el script no intenta notificar a Discord y rechaza todo devolviendo HTTP 500.
 
-**Auditoría:**
-- El error exacto se registra en console.error()
-- Timestamp captura cuándo falló
+### Que pasa si Discord no recibe la notificacion?
 
----
+Escenarios:
+- Error 429: Discord saturado (Rate Limit de Cloudflare por usar IP de Google)
+- Error 5xx: Servidor Discord caido
 
-### 🔔 ¿Qué pasa si Discord no recibe la notificación?
+Resultado:
+- Retorna Exito Parcial (HTTP 200 con code 200 logico pero estado Exito Parcial).
+- Datos persistidos en Sheets, falta solo notificacion.
+- Exception manejada con muteHttpExceptions = true.
 
-**Escenarios:**
-- Error 429: Discord saturado (Rate Limit)
-- Error 5xx: Servidor Discord caído
-- Webhook expirado o inválido
-- Red no responde
+### Que pasa si llega dos veces la misma solicitud?
 
-**Resultado:**
-- ✅ Si Sheets funciona → HTTP 207 (Parcial)
-  - Mensaje: "Datos guardados en Sheets, pero la notificación falló: [error]"
-  - Datos persistidos, falta solo notificación
-- ❌ Si Sheets también falla → HTTP 500 (Error total)
-
-**Auditoría:**
-- El código HTTP específico se reporta al cliente
-- Error 429 se diferencia de otros errores
-
----
-
-### 🔄 ¿Qué pasa si llega dos veces la misma solicitud?
-
-**Escenario:**
+Escenario:
 - Usuario hace submit del formulario 2 veces
-- Sistema reintenta por timeout
-- Integración manual envía mismo JSON
 
-**Resultado:**
-- ✅ **Primera solicitud:** HTTP 200 (registrada)
-- ❌ **Segunda solicitud idéntica:** HTTP 409 (rechazada)
-- ✅ **Protección:** Solo 1 registro en Sheets, 1 notificación en Discord
-- ✅ **Idempotencia garantizada**
-
-**Lógica:**
-```javascript
-if (existeSolicitud(sheet, payload.solicitudId)) {
-  return HTTP 409 // ← Rechaza duplicada
-}
-```
+Resultado:
+- Primera solicitud: HTTP 200 (registrada)
+- Segunda solicitud identica: HTTP 409 (rechazada)
+- Proteccion: Solo 1 registro en Sheets, 1 notificacion en Discord
+- Idempotencia garantizada
 
 ---
 
-## 📋 Estructura de Google Sheets
+## Estructura de Google Sheets
 
 | A | B | C | D | E | F | G | H | I | J |
 |---|---|---|---|---|---|---|---|---|---|
-| **solicitudId** | **fecha** | **est.nombre** | **est.grado** | **rep.nombre** | **rep.email** | **colegio** | **canal** | **estado** | **timestamp** |
-| SOL-001 | 2026-05-14T10:00 | Juan P. | 10° | Carlos P. | c@ex.com | Colegio A | Postman | Pendiente | 2026-05-14T10:05Z |
-| SOL-002 | 2026-05-14T11:00 | María L. | 11° | Ana L. | a@ex.com | Instituto B | Form | Aceptado | 2026-05-14T11:05Z |
+| solicitudId | fecha | est.nombre | est.grado | rep.nombre | rep.email | colegio | canal | estado | timestamp |
+| SOL-001 | 2026-05-14T10:00 | Juan P. | 10 EGB | Carlos P. | c@ex.com | Colegio A | Postman | Pendiente | 2026-05-14T10:05Z |
 
 ---
 
-## 🛡️ Medidas de Seguridad
+## Medidas de Seguridad
 
-✅ **Validación exhaustiva** de campos y formatos  
-✅ **Control de duplicados** mediante búsqueda de ID único  
-✅ **Manejo independiente** de servicios (fallo en uno no mata el otro)  
-✅ **Excepciones capturadas** con try-catch en bloques críticos  
-✅ **muteHttpExceptions** en Discord para evitar crashes  
-✅ **Auditoría completa** con timestamps y console.error()  
-✅ **Respuestas descriptivas** que permiten diagnóstico rápido  
-
----
-
-## 📚 Documentación Completa
-
-Para detalles técnicos, diagrama de flujo y análisis completo, ver:
-- 📄 **[DOCUMENTACION_TECNICA.md](DOCUMENTACION_TECNICA.md)**
+- Validacion exhaustiva de campos y formatos
+- Control de duplicados mediante busqueda de ID unico
+- Prevencion de Inyeccion CSV con funcion de sanitizacion
+- Webhook y ID de Sheets protegidos en PropertiesService
+- Enmascarado de correo electronico antes de enviar a Discord
+- Excepciones capturadas con try-catch en bloques criticos
+- muteHttpExceptions en Discord para evitar crashes no controlados
 
 ---
 
-## 🧪 Pruebas
+## Pruebas (Casos de uso Postman)
 
-### Archivo de Casos de Prueba
-
-Ver `POSTMAN_TEST_CASES.json` con 10 escenarios:
-
-1. ✅ Solicitud válida completa
-2. ❌ Falta `solicitudId`
-3. ❌ Falta `estudiante.nombre`
-4. ❌ Falta `representante.email`
-5. ❌ Email formato inválido
-6. ❌ Fecha formato incorrecto
-7. ❌ Solicitud duplicada
-8. ⚠️ Sheets OK, Discord falla (HTTP 207)
-9. ⚠️ Sheets falla, Discord OK (HTTP 207)
-10. ❌ Ambos servicios fallan (HTTP 500)
-
-**Importar en Postman:**
-1. Postman → Import → Selecciona `POSTMAN_TEST_CASES.json`
-2. Reemplaza `{{DEPLOYMENT_URL}}` con tu URL
-3. Ejecuta cada caso y verifica respuestas
+1. Registro Exitoso: JSON completo y correcto (Retorna 200).
+2. Campos Faltantes: Omitir estado o nombre (Retorna 400).
+3. Idempotencia: Enviar la misma peticion otra vez (Retorna 409).
+4. Formato Invalido: Enviar email sin arroba o fecha incorrecta (Retorna 400).
 
 ---
 
-## 📋 Checklist de Requisitos
-
-| Requisito | Cumplido |
-|-----------|----------|
-| Registrar en Google Sheets | ✅ |
-| Enviar notificación a Discord | ✅ |
-| Validar campos obligatorios | ✅ |
-| Notificación con ID, nombre, grado, colegio, estado | ✅ |
-| Respuesta indicando éxito o error | ✅ |
-| Demostración de escenarios de error | ✅ |
-| Diagrama de flujo | ✅ |
-| Explicación de casos especiales | ✅ |
-| Evidencias de pruebas | ✅ |
-| Manejo de error Google Sheets | ✅ |
-| Manejo de error Discord | ✅ |
-| Control de duplicados (Idempotencia) | ✅ |
-| Claridad del documento | ✅ |
-
----
-
-## 📞 Contacto y Soporte
-
-Para preguntas o problemas:
-- Revisar `DOCUMENTACION_TECNICA.md`
-- Verificar logs en Google Apps Script console
-- Validar configuración de SHEET_ID y WEBHOOK_URL
-- Probar con casos de `POSTMAN_TEST_CASES.json`
-
----
-
-**Sistema de Notificaciones EduConnect**  
-*Integración de Sistemas — Semana 6*  
-*14 de Mayo de 2026*
+Sistema de Notificaciones EduConnect
+Integracion de Sistemas - Semana 6
+14 de Mayo de 2026
